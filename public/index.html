@@ -536,15 +536,25 @@ async function doLogin() {
   const username = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
   const err = document.getElementById('login-err');
+  const btn = document.querySelector('.login-btn');
   err.style.display = 'none';
-  const res = await api('/api/login', 'POST', { username, password });
-  if (res.ok) {
-    currentUser = res.user;
-    bootApp();
-  } else {
-    err.textContent = res.error || 'Login failed';
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
+  try {
+    const res = await api('/api/login', 'POST', { username, password });
+    if (res.ok) {
+      currentUser = res.user;
+      bootApp();
+    } else {
+      err.textContent = res.error || 'Login failed';
+      err.style.display = 'block';
+    }
+  } catch(e) {
+    err.textContent = 'Server error: ' + e.message;
     err.style.display = 'block';
   }
+  btn.textContent = 'Sign In';
+  btn.disabled = false;
 }
 
 async function doLogout() {
