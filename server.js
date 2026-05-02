@@ -9,8 +9,9 @@ const PORT = process.env.PORT || 3000;
 
 // Create data dir FIRST before any DB init
 const fs = require('fs');
-const dataDir = path.join(__dirname, 'data');
+const dataDir = process.env.DATA_DIR || path.join('/tmp', 'biotech-data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+console.log('Data directory:', dataDir);
 
 // DBs
 const usersDB = new Datastore({ filename: path.join(dataDir, 'users.db'), autoload: true });
@@ -72,10 +73,13 @@ function auth(right) {
 // ══════════════════════════════════
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
+  console.log('Login attempt:', username);
   usersDB.findOne({ username }, (err, user) => {
-    if (!user) return res.json({ ok: false, error: 'Invalid credentials' });
+    console.log('User found:', !!user, 'err:', err);
+    if (!user) return res.json({ ok: false, error: 'User not found: ' + username });
     bcrypt.compare(password, user.password, (e, match) => {
-      if (!match) return res.json({ ok: false, error: 'Invalid credentials' });
+      console.log('Password match:', match, 'err:', e);
+      if (!match) return res.json({ ok: false, error: 'Wrong password' });
       req.session.user = { id: user._id, username: user.username, name: user.name, role: user.role, rights: user.rights };
       res.json({ ok: true, user: req.session.user });
     });
