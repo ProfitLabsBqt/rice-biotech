@@ -30,19 +30,23 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Seed admin on first run ──
-usersDB.findOne({ username: 'admin' }, (err, doc) => {
-  if (!doc) {
-    bcrypt.hash('admin123', 10, (e, hash) => {
+// ── Seed admin — always reset to ensure correct password ──
+bcrypt.hash('admin123', 10, (e, hash) => {
+  usersDB.findOne({ username: 'admin' }, (err, doc) => {
+    if (!doc) {
       usersDB.insert({
         username: 'admin', password: hash, name: 'Administrator',
         role: 'admin',
         rights: ['dashboard','po','weighbridge','lab','payment','admin'],
         createdAt: new Date()
       });
-      console.log('Admin seeded: admin / admin123');
-    });
-  }
+      console.log('Admin created: admin / admin123');
+    } else {
+      usersDB.update({ username: 'admin' }, { $set: { password: hash } }, {}, () => {
+        console.log('Admin password reset: admin / admin123');
+      });
+    }
+  });
 });
 
 // ── Counters ──
