@@ -61,8 +61,7 @@ function seedAdmin(cb) {
       password: hash,
       name: 'Administrator',
       role: 'admin',
-      rights: ['dashboard','po','weighbridge','lab','payment','admin'],
-      createdAt: new Date()
+      rights: ['dashboard','po','weighbridge','lab','payment','admin']
     }, (err2, doc) => {
       if (err2) { console.error('Admin insert failed:', err2); return; }
       console.log('Admin seeded OK, id:', doc._id);
@@ -137,7 +136,7 @@ app.post('/api/users', auth('admin'), (req, res) => {
   usersDB.findOne({ username }, (err, existing) => {
     if (existing) return res.json({ ok: false, error: 'Username taken' });
     const hash = bcrypt.hashSync(password, 10);
-    usersDB.insert({ username, password: hash, name, rights: rights || [], createdAt: new Date() }, (err, doc) => {
+    usersDB.insert({ username, password: hash, name, rights: rights || [] }, (err, doc) => {
       res.json({ ok: true, user: { ...doc, password: undefined } });
     });
   });
@@ -161,7 +160,7 @@ app.get('/api/pos', auth('dashboard'), (req, res) => {
 
 app.post('/api/pos', auth('po'), (req, res) => {
   nextCounter('po', (num) => {
-    const po = { poNumber: 'PO-' + num, ...req.body, receivedQtyMT: 0, status: 'Active', createdBy: req.session.user.username, createdAt: new Date() };
+    const po = { poNumber: 'PO-' + num, ...req.body, receivedQtyMT: 0, status: 'Active', createdBy: req.session.user.username };
     posDB.insert(po, (err, doc) => res.json({ ok: true, po: doc }));
   });
 });
@@ -176,7 +175,7 @@ app.get('/api/wb', auth('dashboard'), (req, res) => {
 });
 
 app.post('/api/wb', auth('weighbridge'), (req, res) => {
-  wbDB.insert({ ...req.body, labDone: false, createdBy: req.session.user.username, createdAt: new Date() }, (err, doc) => {
+  wbDB.insert({ ...req.body, labDone: false, createdBy: req.session.user.username }, (err, doc) => {
     res.json({ ok: true, entry: doc });
   });
 });
@@ -188,7 +187,7 @@ app.get('/api/grns', auth('dashboard'), (req, res) => {
 
 app.post('/api/grns', auth('lab'), (req, res) => {
   nextCounter('grn', (num) => {
-    const grn = { grnNumber: 'GRN-' + num, ...req.body, status: 'Pending Acceptance', createdBy: req.session.user.username, createdAt: new Date() };
+    const grn = { grnNumber: 'GRN-' + num, ...req.body, status: 'Pending Acceptance', createdBy: req.session.user.username };
     grnDB.insert(grn, (err, doc) => {
       wbDB.update({ _id: req.body.wbId }, { $set: { labDone: true } }, {});
       posDB.findOne({ poNumber: req.body.poId }, (e, po) => {
