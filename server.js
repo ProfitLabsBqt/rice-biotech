@@ -31,22 +31,21 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Seed admin — always reset to ensure correct password ──
-bcrypt.hash('admin123', 10, (e, hash) => {
-  usersDB.findOne({ username: 'admin' }, (err, doc) => {
-    if (!doc) {
+// ── Seed admin — wait for DB to load then upsert ──
+usersDB.loadDatabase((loadErr) => {
+  if (loadErr) { console.error('DB load error:', loadErr); return; }
+  bcrypt.hash('admin123', 10, (e, hash) => {
+    usersDB.remove({ username: 'admin' }, { multi: true }, () => {
       usersDB.insert({
         username: 'admin', password: hash, name: 'Administrator',
         role: 'admin',
         rights: ['dashboard','po','weighbridge','lab','payment','admin'],
         createdAt: new Date()
+      }, (insertErr, doc) => {
+        if (insertErr) console.error('Admin insert error:', insertErr);
+        else console.log('Admin ready: admin / admin123, id:', doc._id);
       });
-      console.log('Admin created: admin / admin123');
-    } else {
-      usersDB.update({ username: 'admin' }, { $set: { password: hash } }, {}, () => {
-        console.log('Admin password reset: admin / admin123');
-      });
-    }
+    });
   });
 });
 
