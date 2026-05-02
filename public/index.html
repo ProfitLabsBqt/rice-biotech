@@ -806,7 +806,7 @@ function calcDed() {
   const wb = allWBs.find(w=>w._id===wbId);
   if (!wb) return;
   const po = allPOs.find(p=>p.poNumber===wb.poId);
-  if (!po) { await loadWBDropdowns(); return; }
+  if (!po) { loadWBDropdowns(); return; }
 
   const rej = document.getElementById('l-rej');
   const res = document.getElementById('l-result');
