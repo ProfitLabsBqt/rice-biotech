@@ -7,15 +7,17 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// DBs
-const usersDB = new Datastore({ filename: path.join(__dirname, 'data/users.db'), autoload: true });
-const posDB   = new Datastore({ filename: path.join(__dirname, 'data/pos.db'),   autoload: true });
-const wbDB    = new Datastore({ filename: path.join(__dirname, 'data/wb.db'),     autoload: true });
-const grnDB   = new Datastore({ filename: path.join(__dirname, 'data/grns.db'),   autoload: true });
-const metaDB  = new Datastore({ filename: path.join(__dirname, 'data/meta.db'),   autoload: true });
-
+// Create data dir FIRST before any DB init
 const fs = require('fs');
-if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+// DBs
+const usersDB = new Datastore({ filename: path.join(dataDir, 'users.db'), autoload: true });
+const posDB   = new Datastore({ filename: path.join(dataDir, 'pos.db'),   autoload: true });
+const wbDB    = new Datastore({ filename: path.join(dataDir, 'wb.db'),     autoload: true });
+const grnDB   = new Datastore({ filename: path.join(dataDir, 'grns.db'),   autoload: true });
+const metaDB  = new Datastore({ filename: path.join(dataDir, 'meta.db'),   autoload: true });
 
 // Middleware
 app.use(express.json());
