@@ -459,6 +459,7 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
   <div class="inner-tabs">
     <button class="itab active" onclick="showInner('admin','users',this);loadUsers()">Users & Rights</button>
     <button class="itab" onclick="showInner('admin','add',this);initAddUser()">Add User</button>
+    <button class="itab" onclick="showInner('admin','pos',this);loadAdminPOs()">Purchase Orders</button>
   </div>
   <div class="ipage active" id="admin-users">
     <div class="card">
@@ -488,6 +489,41 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
         <button class="btn btn-s" onclick="clearAddUser()">Clear</button>
         <button class="btn btn-p" onclick="addUser()">Create User</button>
       </div>
+    </div>
+  </div>
+  <div class="ipage" id="admin-pos">
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title">
+        <span>Recent <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— under 7 days</span></span>
+        <span class="pill g" id="badge-po-recent">—</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:-4px 0 12px">No cancellation available within the first 7 days.</p>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>PO No.</th><th>Date</th><th>Age</th><th>Supplier</th><th>Rice Type</th><th>Total MT</th><th>Received MT</th><th>Balance MT</th><th>₹/Q</th><th>Payment</th><th>Status</th></tr></thead>
+        <tbody id="admin-po-recent"><tr><td colspan="11" class="tbl-empty">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+    <div class="card" style="margin-bottom:14px;border-color:rgba(240,192,64,.3);">
+      <div class="card-title" style="color:var(--accent);">
+        <span>Review Window <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— 7 to 9 days</span></span>
+        <span class="pill y" id="badge-po-review">—</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:-4px 0 12px">Cancellable. Supplier may have trucks en route — confirm before cancelling.</p>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>PO No.</th><th>Date</th><th>Age</th><th>Supplier</th><th>Rice Type</th><th>Total MT</th><th>Received MT</th><th>Balance MT</th><th>₹/Q</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="admin-po-review"><tr><td colspan="12" class="tbl-empty">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+    <div class="card" style="border-color:rgba(248,113,113,.3);">
+      <div class="card-title" style="color:var(--red);">
+        <span>Aged <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— 10 days or older</span></span>
+        <span class="pill r" id="badge-po-aged">—</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:-4px 0 12px">Cancellable. Follow up with supplier on any pending balance.</p>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>PO No.</th><th>Date</th><th>Age</th><th>Supplier</th><th>Rice Type</th><th>Total MT</th><th>Received MT</th><th>Balance MT</th><th>₹/Q</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="admin-po-aged"><tr><td colspan="12" class="tbl-empty">Loading...</td></tr></tbody>
+      </table></div>
     </div>
   </div>
 </div>
@@ -1046,6 +1082,61 @@ function toast(msg, isErr) {
   t.style.color=isErr?'var(--red)':'var(--green)';
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ═══ ADMIN — PURCHASE ORDERS ═══
+async function loadAdminPOs() {
+  const pos = await api('/api/pos');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const groups = { recent: [], review: [], aged: [] };
+  pos.forEach(po => {
+    const d = new Date(po.date); d.setHours(0,0,0,0);
+    po._age = Math.floor((today - d) / 86400000);
+    if (po._age < 7) groups.recent.push(po);
+    else if (po._age < 10) groups.review.push(po);
+    else groups.aged.push(po);
+  });
+  document.getElementById('badge-po-recent').textContent = groups.recent.length;
+  document.getElementById('badge-po-review').textContent = groups.review.length;
+  document.getElementById('badge-po-aged').textContent = groups.aged.length;
+  renderAdminPOGroup('admin-po-recent', groups.recent, false);
+  renderAdminPOGroup('admin-po-review', groups.review, true);
+  renderAdminPOGroup('admin-po-aged', groups.aged, true);
+}
+
+function renderAdminPOGroup(tbodyId, pos, canCancel) {
+  const cols = canCancel ? 12 : 11;
+  const tbody = document.getElementById(tbodyId);
+  if (!pos.length) { tbody.innerHTML = `<tr><td colspan="${cols}" class="tbl-empty">None</td></tr>`; return; }
+  tbody.innerHTML = pos.map(po => {
+    const bal = po.qty - (po.receivedQtyMT||0);
+    const pct = po.qty > 0 ? Math.round((po.receivedQtyMT||0)/po.qty*100) : 0;
+    const cancelled = po.status === 'Cancelled';
+    const actionCell = canCancel
+      ? `<td>${cancelled ? '—' : `<button class="btn btn-d" style="padding:4px 10px;font-size:11px;" onclick="cancelPO('${po._id}','${po.poNumber}')">Cancel</button>`}</td>`
+      : '';
+    return `<tr${cancelled ? ' style="opacity:0.45"' : ''}>
+      <td class="mono" style="color:var(--accent)">${po.poNumber}</td>
+      <td class="mono">${po.date}</td>
+      <td class="mono">${po._age}d</td>
+      <td>${po.supplier}</td>
+      <td>${po.riceType}</td>
+      <td class="mono">${po.qty} MT</td>
+      <td class="mono" style="color:var(--green)">${(po.receivedQtyMT||0).toFixed(1)} MT</td>
+      <td class="mono" style="color:${bal<=5?'var(--red)':'var(--accent)'}">${bal.toFixed(1)} MT</td>
+      <td class="mono">₹${po.price}/Q</td>
+      <td>${po.paymentCond}</td>
+      <td><span class="pill ${cancelled?'r':pct===100?'r':pct>0?'y':'g'}">${cancelled?'CANCELLED':pct===100?'COMPLETE':pct>0?pct+'% DONE':'OPEN'}</span></td>
+      ${actionCell}
+    </tr>`;
+  }).join('');
+}
+
+async function cancelPO(id, poNumber) {
+  if (!confirm(`Cancel ${poNumber}? This cannot be undone.`)) return;
+  await api('/api/pos/'+id, 'PUT', { status: 'Cancelled' });
+  toast(poNumber+' cancelled');
+  loadAdminPOs();
 }
 
 // ═══ INIT ═══
