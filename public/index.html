@@ -356,11 +356,27 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
     <div class="date-note" id="w-date-note">ℹ Time before 09:00 AM — GRN date set to previous day: <strong id="w-prev-date"></strong></div>
     <div class="form-section" style="margin-top:20px;">
       <div class="fsec-title">Link to PO</div>
-      <div class="form-grid">
+      <div class="form-grid g3">
         <div class="field"><label>SELECT PO NUMBER</label><select id="w-po" onchange="fillFromPO()"><option value="">Loading POs...</option></select></div>
         <div class="field"><label>SUPPLIER (auto)</label><input class="ro" id="w-sup" readonly></div>
         <div class="field"><label>AGENT (auto)</label><input class="ro" id="w-agent" readonly></div>
-        <div class="field"><label>INVOICE QTY (QUINTALS)</label><input type="number" step="0.01" id="w-invq" placeholder="from supplier invoice" oninput="checkQty()"></div>
+      </div>
+    </div>
+    <div class="form-section" style="margin-top:20px;">
+      <div class="fsec-title">Invoice Details</div>
+      <div class="form-grid g3">
+        <div class="field"><label>INVOICE NUMBER</label><input id="w-inv-no" placeholder="e.g. INV/2026/042"></div>
+        <div class="field"><label>INVOICE DATE</label><input type="date" id="w-inv-date"></div>
+        <div class="field"><label>INVOICE QTY (QUINTALS)</label><input type="number" step="0.01" id="w-invq" placeholder="e.g. 250.20" oninput="checkQty(); calcInvAmt()"></div>
+      </div>
+      <div class="form-grid g3" style="margin-top:12px;">
+        <div class="field"><label>INVOICE RATE (₹ / QUINTAL)</label><input type="number" step="0.01" id="w-inv-rate" placeholder="e.g. 2090" oninput="calcInvAmt()"></div>
+        <div class="field"><label>INVOICE AMOUNT ₹ (auto)</label><input class="ro" id="w-inv-amt" readonly></div>
+      </div>
+      <div style="margin-top:14px;padding:11px 14px;background:var(--surface2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;gap:12px;">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap;">📎 INVOICE SCAN</span>
+        <input type="file" accept="image/*,.pdf" disabled style="flex:1;font-size:12px;color:var(--text3);cursor:not-allowed;">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap;font-style:italic;">Auto-OCR coming soon</span>
       </div>
     </div>
     <div class="mismatch-box" id="w-mismatch">⚠ Quantity mismatch detected — <span id="w-mismatch-msg"></span></div>
@@ -794,6 +810,10 @@ async function saveWB() {
     poId: poNum, supplier: document.getElementById('w-sup').value,
     agent: document.getElementById('w-agent').value,
     invoiceQty: parseFloat(document.getElementById('w-invq').value)||0,
+    invoiceNo: document.getElementById('w-inv-no').value.trim(),
+    invoiceDate: document.getElementById('w-inv-date').value,
+    invoiceRate: parseFloat(document.getElementById('w-inv-rate').value)||0,
+    invoiceAmt: parseFloat(document.getElementById('w-inv-amt').value.replace(/[^0-9.]/g,''))||0,
     wbDate: dateVal, wbTime: timeVal,
     grnDate: grnDate.toISOString().split('T')[0]
   };
@@ -802,11 +822,17 @@ async function saveWB() {
 }
 
 function clearWB() {
-  ['w-rst','w-veh','w-gross','w-tare','w-invq'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['w-net','w-netq','w-grndate','w-sup','w-agent'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['w-rst','w-veh','w-gross','w-tare','w-invq','w-inv-no','w-inv-date','w-inv-rate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['w-net','w-netq','w-grndate','w-sup','w-agent','w-inv-amt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('w-po').value='';
   document.getElementById('w-date-note').classList.remove('show');
   document.getElementById('w-mismatch').classList.remove('show');
+}
+
+function calcInvAmt() {
+  const qty = parseFloat(document.getElementById('w-invq').value)||0;
+  const rate = parseFloat(document.getElementById('w-inv-rate').value)||0;
+  document.getElementById('w-inv-amt').value = qty > 0 && rate > 0 ? '₹' + (qty*rate).toLocaleString('en-IN') : '';
 }
 
 // ═══ LAB ═══
