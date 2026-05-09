@@ -394,13 +394,14 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
         <div class="form-grid g3">
           <div class="field"><label>STARCH % <span style="color:var(--text3)">(std 68%)</span></label><input type="number" step="0.01" id="l-starch" placeholder="e.g. 67.80" oninput="calcDed()"></div>
           <div class="field"><label>MOISTURE % <span style="color:var(--text3)">(std 12%)</span></label><input type="number" step="0.01" id="l-moist" placeholder="e.g. 11.68"></div>
-          <div class="field"><label>FOREIGN PARTICLE / TFM % <span style="color:var(--red)">(reject >1%)</span></label><input type="number" step="0.01" id="l-tfm" placeholder="e.g. 0.28" oninput="calcDed()"></div>
+          <div class="field"><label>TOTAL TFM % <span style="color:var(--text3)">(recorded)</span></label><input type="number" step="0.01" id="l-tfm" placeholder="e.g. 0.28"></div>
+          <div class="field"><label>STONE % <span style="color:var(--red)">(reject >1%)</span></label><input type="number" step="0.01" id="l-stone" placeholder="e.g. 0.10" oninput="calcDed()"></div>
           <div class="field"><label>BLACK RICE % <span style="color:var(--text3)">(ded >3%)</span></label><input type="number" step="0.01" id="l-black" placeholder="e.g. 2.31" oninput="calcDed()"></div>
           <div class="field"><label>INVOICE QTY (Q)</label><input class="ro" id="l-invq" readonly></div>
           <div class="field"><label>RECEIVED QTY (KG)</label><input class="ro" id="l-recvkg" readonly></div>
         </div>
       </div>
-      <div class="rej-box" id="l-rej"><h3>🚫 TRUCK REJECTED — TFM Above 1%</h3><p>Foreign Particle / TFM exceeds 1%. This truck must be rejected. Supplier will be notified.</p></div>
+      <div class="rej-box" id="l-rej"><h3>🚫 TRUCK REJECTED — Stone Above 1%</h3><p>Stone content exceeds 1%. This truck must be rejected. Supplier will be notified.</p></div>
       <div class="result-box" id="l-result" style="display:none;">
         <h3>Auto-Calculated Deductions & Payment</h3>
         <div class="rrow"><span class="rlabel">Base Price (from PO)</span><span class="rval" id="r-base">—</span></div>
@@ -423,7 +424,7 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
   <div class="ipage" id="lab-grns">
     <div class="card">
       <div class="card-title">All GRNs</div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>GRN No.</th><th>Date</th><th>Vehicle</th><th>Supplier</th><th>Agent</th><th>Recv Q</th><th>Starch%</th><th>TFM%</th><th>Black%</th><th>Ded%</th><th>Payable ₹</th><th>Due Date</th></tr></thead><tbody id="grn-tbody"><tr><td colspan="12" class="tbl-empty">Loading...</td></tr></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>GRN No.</th><th>Date</th><th>Vehicle</th><th>Supplier</th><th>Agent</th><th>Recv Q</th><th>Starch%</th><th>TFM%</th><th>Stone%</th><th>Black%</th><th>Ded%</th><th>Payable ₹</th><th>Due Date</th></tr></thead><tbody id="grn-tbody"><tr><td colspan="13" class="tbl-empty">Loading...</td></tr></tbody></table></div>
     </div>
   </div>
 </div>
@@ -833,7 +834,7 @@ function fillFromWB() {
 
 function calcDed() {
   const starch = parseFloat(document.getElementById('l-starch').value)||0;
-  const tfm = parseFloat(document.getElementById('l-tfm').value)||0;
+  const stone = parseFloat(document.getElementById('l-stone').value)||0;
   const black = parseFloat(document.getElementById('l-black').value)||0;
   const wbId = document.getElementById('l-veh').value;
   const wb = allWBs.find(w=>w._id===wbId);
@@ -843,7 +844,7 @@ function calcDed() {
 
   const rej = document.getElementById('l-rej');
   const res = document.getElementById('l-result');
-  if (tfm > 1) { rej.classList.add('show'); res.style.display='none'; return; }
+  if (stone > 1) { rej.classList.add('show'); res.style.display='none'; return; }
   rej.classList.remove('show');
 
   let stDed = 0, stNote = 'No deduction';
@@ -873,7 +874,7 @@ function calcDed() {
 
 // Fix async in oninput
 document.addEventListener('DOMContentLoaded', () => {
-  ['l-starch','l-tfm','l-black'].forEach(id => {
+  ['l-starch','l-stone','l-black'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', async () => {
       const wbId = document.getElementById('l-veh').value;
@@ -892,9 +893,10 @@ async function genGRN() {
   const starch = parseFloat(document.getElementById('l-starch').value);
   const moisture = parseFloat(document.getElementById('l-moist').value);
   const tfm = parseFloat(document.getElementById('l-tfm').value);
+  const stone = parseFloat(document.getElementById('l-stone').value);
   const black = parseFloat(document.getElementById('l-black').value);
-  if (!starch||!moisture||tfm===undefined||!black) { toast('Enter all quality parameters', true); return; }
-  if (tfm > 1) { toast('Truck rejected — TFM>1%. Cannot generate GRN.', true); return; }
+  if (!starch||!moisture||isNaN(tfm)||isNaN(stone)||!black) { toast('Enter all quality parameters', true); return; }
+  if (stone > 1) { toast('Truck rejected — Stone >1%. Cannot generate GRN.', true); return; }
 
   if (!allPOs.length) allPOs = await api('/api/pos');
   const po = allPOs.find(p=>p.poNumber===wb.poId);
@@ -913,7 +915,7 @@ async function genGRN() {
     supplier: wb.supplier, agent: wb.agent,
     date: wb.grnDate, invoiceQty: wb.invoiceQty,
     receivedKg: wb.net, receivedQ: wb.netQ,
-    starch, moisture, tfm, black,
+    starch, moisture, tfm, stone, black,
     starchDed: stDed, blackDed: blDed, totalDedPct: totDed,
     effPrice: +effPrice.toFixed(2), payable,
     poPrice: po.price, paymentCond: po.paymentCond,
@@ -923,7 +925,7 @@ async function genGRN() {
 }
 
 function clearLab() {
-  ['l-starch','l-moist','l-tfm','l-black'].forEach(id=>document.getElementById(id).value='');
+  ['l-starch','l-moist','l-tfm','l-stone','l-black'].forEach(id=>document.getElementById(id).value='');
   ['l-sup','l-po','l-date','l-recvkg','l-invq'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('l-veh').value='';
   document.getElementById('l-result').style.display='none';
@@ -934,7 +936,7 @@ async function loadGRNList() {
   const grns = await api('/api/grns');
   allGRNs = grns;
   const tbody = document.getElementById('grn-tbody');
-  if (!grns.length) { tbody.innerHTML='<tr><td colspan="12" class="tbl-empty">No GRNs yet</td></tr>'; return; }
+  if (!grns.length) { tbody.innerHTML='<tr><td colspan="13" class="tbl-empty">No GRNs yet</td></tr>'; return; }
   tbody.innerHTML = grns.map(g=>`<tr>
     <td class="mono" style="color:var(--accent)">${g.grnNumber}</td>
     <td class="mono">${g.date}</td>
@@ -942,7 +944,8 @@ async function loadGRNList() {
     <td>${g.supplier}</td><td>${g.agent||'—'}</td>
     <td class="mono">${g.receivedQ}Q</td>
     <td class="mono" style="color:${g.starch<67?'var(--red)':g.starch<68?'var(--accent)':'var(--green)'}">${g.starch}%</td>
-    <td class="mono" style="color:${g.tfm>1?'var(--red)':''}">${g.tfm}%</td>
+    <td class="mono">${g.tfm}%</td>
+    <td class="mono" style="color:${g.stone>1?'var(--red)':'var(--green)'}">${g.stone}%</td>
     <td class="mono" style="color:${g.black>3?'var(--accent)':''}">${g.black}%</td>
     <td class="mono" style="color:var(--red)">${g.totalDedPct}%</td>
     <td class="mono" style="color:var(--green)">₹${g.payable.toLocaleString('en-IN')}</td>
