@@ -2,7 +2,7 @@ services:
   - type: web
     name: rice-biotech
     env: node
-    region: singapore
+    region: frankfurt
     buildCommand: npm install
     startCommand: node server.js
     envVars:
