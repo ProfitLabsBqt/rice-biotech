@@ -299,7 +299,7 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
           <div class="field"><label>TOTAL QUANTITY (MT)</label><input type="number" id="f-po-qty" placeholder="e.g. 200" oninput="calcPO()"></div>
           <div class="field"><label>PRICE (₹ / QUINTAL)</label><input type="number" id="f-po-price" placeholder="e.g. 2090" oninput="calcPO()"></div>
         </div>
-        <div class="form-grid g3" style="margin-top:12px;">
+        <div class="form-grid g2" style="margin-top:12px;">
           <div class="field"><label>PAYMENT CONDITION</label>
             <select id="f-po-pay">
               <option value="30">30 Days</option><option value="45">45 Days</option>
@@ -307,7 +307,6 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
               <option value="Advance">Advance</option>
             </select>
           </div>
-          <div class="field"><label>EST. TRUCKS (auto)</label><input class="ro" id="f-po-trucks" readonly></div>
           <div class="field"><label>TOTAL VALUE ₹ (auto)</label><input class="ro" id="f-po-val" readonly></div>
         </div>
       </div>
@@ -631,7 +630,6 @@ function initPOForm() {
 function calcPO() {
   const qty = parseFloat(document.getElementById('f-po-qty').value) || 0;
   const price = parseFloat(document.getElementById('f-po-price').value) || 0;
-  document.getElementById('f-po-trucks').value = qty > 0 ? Math.ceil(qty/30) + ' trucks' : '';
   document.getElementById('f-po-val').value = qty > 0 && price > 0 ? '₹' + (qty*10*price).toLocaleString('en-IN') : '';
 }
 
@@ -658,7 +656,6 @@ function clearPO() {
   ['f-po-sup','f-po-agent','f-po-qty','f-po-price','f-po-wa'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-po-rice').value = '';
   document.getElementById('f-po-pay').value = '30';
-  document.getElementById('f-po-trucks').value = '';
   document.getElementById('f-po-val').value = '';
   initPOForm();
 }
