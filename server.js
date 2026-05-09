@@ -180,6 +180,10 @@ app.post('/api/wb', auth('weighbridge'), (req, res) => {
   });
 });
 
+app.put('/api/wb/:id', auth('invoice'), (req, res) => {
+  wbDB.update({ _id: req.params.id }, { $set: req.body }, {}, () => res.json({ ok: true }));
+});
+
 // ── LAB / GRN ROUTES ──
 app.get('/api/grns', auth('dashboard'), (req, res) => {
   grnDB.find({}).sort({ createdAt: -1 }).exec((err, docs) => res.json(docs));

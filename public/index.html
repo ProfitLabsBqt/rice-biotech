@@ -229,6 +229,7 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
   <button class="nav-tab active" data-right="dashboard" onclick="showPage('dashboard',this)">Dashboard</button>
   <button class="nav-tab" data-right="po" onclick="showPage('po',this)">PO</button>
   <button class="nav-tab" data-right="weighbridge" onclick="showPage('weighbridge',this)">Weighbridge</button>
+  <button class="nav-tab" data-right="invoice" onclick="showPage('invoice',this)">Invoice</button>
   <button class="nav-tab" data-right="lab" onclick="showPage('lab',this)">Lab / GRN</button>
   <button class="nav-tab" data-right="payment" onclick="showPage('payment',this)">Payment</button>
   <button class="nav-tab" data-right="admin" onclick="showPage('admin',this)">Admin</button>
@@ -362,24 +363,6 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
         <div class="field"><label>AGENT (auto)</label><input class="ro" id="w-agent" readonly></div>
       </div>
     </div>
-    <div class="form-section" style="margin-top:20px;">
-      <div class="fsec-title">Invoice Details</div>
-      <div class="form-grid g3">
-        <div class="field"><label>INVOICE NUMBER</label><input id="w-inv-no" placeholder="e.g. INV/2026/042"></div>
-        <div class="field"><label>INVOICE DATE</label><input type="date" id="w-inv-date"></div>
-        <div class="field"><label>INVOICE QTY (QUINTALS)</label><input type="number" step="0.01" id="w-invq" placeholder="e.g. 250.20" oninput="checkQty(); calcInvAmt()"></div>
-      </div>
-      <div class="form-grid g3" style="margin-top:12px;">
-        <div class="field"><label>INVOICE RATE (₹ / QUINTAL)</label><input type="number" step="0.01" id="w-inv-rate" placeholder="e.g. 2090" oninput="calcInvAmt()"></div>
-        <div class="field"><label>INVOICE AMOUNT ₹ (auto)</label><input class="ro" id="w-inv-amt" readonly></div>
-      </div>
-      <div style="margin-top:14px;padding:11px 14px;background:var(--surface2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;gap:12px;">
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap;">📎 INVOICE SCAN</span>
-        <input type="file" accept="image/*,.pdf" disabled style="flex:1;font-size:12px;color:var(--text3);cursor:not-allowed;">
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap;font-style:italic;">Auto-OCR coming soon</span>
-      </div>
-    </div>
-    <div class="mismatch-box" id="w-mismatch">⚠ Quantity mismatch detected — <span id="w-mismatch-msg"></span></div>
     <div class="btn-row">
       <button class="btn btn-s" onclick="clearWB()">Clear</button>
       <button class="btn btn-p" onclick="saveWB()">Save Entry</button>
@@ -544,6 +527,52 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
     </div>
   </div>
 </div>
+
+<!-- INVOICE -->
+<div class="page" id="page-invoice">
+  <div class="card">
+    <div class="card-title">Invoice Entry</div>
+    <div class="form-section">
+      <div class="fsec-title">Select Truck</div>
+      <div class="form-grid g3">
+        <div class="field"><label>VEHICLE (from weighbridge)</label>
+          <select id="inv-veh" onchange="fillFromWBForInv()"><option value="">Select vehicle...</option></select>
+        </div>
+        <div class="field"><label>SUPPLIER (auto)</label><input class="ro" id="inv-sup" readonly></div>
+        <div class="field"><label>PO NUMBER (auto)</label><input class="ro" id="inv-po" readonly></div>
+      </div>
+      <div class="form-grid g3" style="margin-top:12px;">
+        <div class="field"><label>NET WEIGHT KG (auto)</label><input class="ro" id="inv-net" readonly></div>
+        <div class="field"><label>NET WEIGHT Q (auto)</label><input class="ro" id="inv-netq" readonly></div>
+        <div class="field"><label>GRN DATE (auto)</label><input class="ro" id="inv-grndate" readonly></div>
+      </div>
+    </div>
+    <div class="form-section" style="margin-top:20px;">
+      <div class="fsec-title">Invoice Details</div>
+      <div class="form-grid g3">
+        <div class="field"><label>INVOICE NUMBER</label><input id="inv-no" placeholder="e.g. INV/2026/042"></div>
+        <div class="field"><label>INVOICE DATE</label><input type="date" id="inv-date"></div>
+        <div class="field"><label>INVOICE QTY (QUINTALS)</label><input type="number" step="0.01" id="inv-qty" placeholder="e.g. 250.20" oninput="calcInvDetails()"></div>
+      </div>
+      <div class="form-grid g3" style="margin-top:12px;">
+        <div class="field"><label>INVOICE RATE (₹ / QUINTAL)</label><input type="number" step="0.01" id="inv-rate" placeholder="e.g. 2090" oninput="calcInvDetails()"></div>
+        <div class="field"><label>INVOICE AMOUNT ₹ (auto)</label><input class="ro" id="inv-amt" readonly></div>
+      </div>
+      <div class="mismatch-box" id="inv-mismatch" style="margin-top:12px;">⚠ Quantity mismatch — <span id="inv-mismatch-msg"></span></div>
+    </div>
+    <div class="form-section" style="margin-top:20px;">
+      <div class="fsec-title">Invoice Scan</div>
+      <div style="padding:11px 14px;background:var(--surface2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;gap:12px;">
+        <input type="file" accept="image/*,.pdf" disabled style="flex:1;font-size:12px;color:var(--text3);cursor:not-allowed;">
+        <span style="font-size:11px;color:var(--text3);font-style:italic;white-space:nowrap;">Auto-OCR coming soon</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="clearInvoiceForm()">Clear</button>
+      <button class="btn btn-p" onclick="saveInvoice()">Save Invoice</button>
+    </div>
+  </div>
+</div>
 </div><!-- /app -->
 
 <!-- EDIT USER MODAL -->
@@ -657,6 +686,7 @@ function showPage(id, el) {
   if (id === 'payment') loadPayment();
   if (id === 'admin') { loadUsers(); }
   if (id === 'weighbridge') loadWBDropdowns();
+  if (id === 'invoice') loadInvoicePage();
   if (id === 'lab') loadLabDropdowns();
 }
 
@@ -758,7 +788,6 @@ function calcNet() {
   const net = g - t;
   document.getElementById('w-net').value = net > 0 ? net + ' KG' : '';
   document.getElementById('w-netq').value = net > 0 ? (net/100).toFixed(2) + ' Q' : '';
-  checkQty();
 }
 
 function checkDate() {
@@ -781,15 +810,6 @@ function checkDate() {
   }
 }
 
-function checkQty() {
-  const netQ = (parseFloat((document.getElementById('w-net').value||'0').replace(' KG',''))||0)/100;
-  const invQ = parseFloat(document.getElementById('w-invq').value)||0;
-  const box = document.getElementById('w-mismatch');
-  if (netQ > 0 && invQ > 0 && Math.abs(netQ-invQ) > 2) {
-    document.getElementById('w-mismatch-msg').textContent = `Weight slip: ${netQ.toFixed(2)}Q | Invoice: ${invQ.toFixed(2)}Q | Diff: ${Math.abs(netQ-invQ).toFixed(2)}Q`;
-    box.classList.add('show');
-  } else { box.classList.remove('show'); }
-}
 
 async function saveWB() {
   const rst = document.getElementById('w-rst').value.trim();
@@ -809,11 +829,6 @@ async function saveWB() {
     rst, vehicle: veh, gross, tare, net, netQ: +(net/100).toFixed(2),
     poId: poNum, supplier: document.getElementById('w-sup').value,
     agent: document.getElementById('w-agent').value,
-    invoiceQty: parseFloat(document.getElementById('w-invq').value)||0,
-    invoiceNo: document.getElementById('w-inv-no').value.trim(),
-    invoiceDate: document.getElementById('w-inv-date').value,
-    invoiceRate: parseFloat(document.getElementById('w-inv-rate').value)||0,
-    invoiceAmt: parseFloat(document.getElementById('w-inv-amt').value.replace(/[^0-9.]/g,''))||0,
     wbDate: dateVal, wbTime: timeVal,
     grnDate: grnDate.toISOString().split('T')[0]
   };
@@ -822,17 +837,10 @@ async function saveWB() {
 }
 
 function clearWB() {
-  ['w-rst','w-veh','w-gross','w-tare','w-invq','w-inv-no','w-inv-date','w-inv-rate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['w-net','w-netq','w-grndate','w-sup','w-agent','w-inv-amt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['w-rst','w-veh','w-gross','w-tare'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['w-net','w-netq','w-grndate','w-sup','w-agent'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('w-po').value='';
   document.getElementById('w-date-note').classList.remove('show');
-  document.getElementById('w-mismatch').classList.remove('show');
-}
-
-function calcInvAmt() {
-  const qty = parseFloat(document.getElementById('w-invq').value)||0;
-  const rate = parseFloat(document.getElementById('w-inv-rate').value)||0;
-  document.getElementById('w-inv-amt').value = qty > 0 && rate > 0 ? '₹' + (qty*rate).toLocaleString('en-IN') : '';
 }
 
 // ═══ LAB ═══
@@ -1111,6 +1119,68 @@ function toast(msg, isErr) {
   t.style.color=isErr?'var(--red)':'var(--green)';
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ═══ INVOICE ═══
+async function loadInvoicePage() {
+  const wbs = await api('/api/wb');
+  allWBs = wbs;
+  const sel = document.getElementById('inv-veh');
+  const pending = wbs.filter(w => !w.labDone);
+  sel.innerHTML = '<option value="">Select vehicle...</option>' +
+    pending.map(w => `<option value="${w._id}">${w.vehicle} — ${w.wbDate} (${w.supplier})</option>`).join('');
+}
+
+function fillFromWBForInv() {
+  const wbId = document.getElementById('inv-veh').value;
+  const wb = allWBs.find(w => w._id === wbId);
+  if (!wb) return;
+  document.getElementById('inv-sup').value = wb.supplier;
+  document.getElementById('inv-po').value = wb.poId;
+  document.getElementById('inv-net').value = wb.net + ' KG';
+  document.getElementById('inv-netq').value = wb.netQ + ' Q';
+  document.getElementById('inv-grndate').value = wb.grnDate;
+  if (wb.invoiceNo) document.getElementById('inv-no').value = wb.invoiceNo;
+  if (wb.invoiceDate) document.getElementById('inv-date').value = wb.invoiceDate;
+  if (wb.invoiceQty) document.getElementById('inv-qty').value = wb.invoiceQty;
+  if (wb.invoiceRate) document.getElementById('inv-rate').value = wb.invoiceRate;
+  calcInvDetails();
+}
+
+function calcInvDetails() {
+  const qty = parseFloat(document.getElementById('inv-qty').value)||0;
+  const rate = parseFloat(document.getElementById('inv-rate').value)||0;
+  document.getElementById('inv-amt').value = qty > 0 && rate > 0 ? '₹' + (qty*rate).toLocaleString('en-IN') : '';
+  const wbId = document.getElementById('inv-veh').value;
+  const wb = allWBs.find(w => w._id === wbId);
+  const box = document.getElementById('inv-mismatch');
+  if (wb && qty > 0 && Math.abs(qty - wb.netQ) > 2) {
+    document.getElementById('inv-mismatch-msg').textContent =
+      `Weight slip: ${wb.netQ}Q | Invoice: ${qty.toFixed(2)}Q | Diff: ${Math.abs(qty - wb.netQ).toFixed(2)}Q`;
+    box.classList.add('show');
+  } else { box.classList.remove('show'); }
+}
+
+async function saveInvoice() {
+  const wbId = document.getElementById('inv-veh').value;
+  if (!wbId) { toast('Select a vehicle', true); return; }
+  const invoiceNo = document.getElementById('inv-no').value.trim();
+  const invoiceDate = document.getElementById('inv-date').value;
+  const invoiceQty = parseFloat(document.getElementById('inv-qty').value);
+  const invoiceRate = parseFloat(document.getElementById('inv-rate').value);
+  if (!invoiceNo || !invoiceDate || !invoiceQty || !invoiceRate) {
+    toast('Fill all invoice details', true); return;
+  }
+  const invoiceAmt = +(invoiceQty * invoiceRate).toFixed(2);
+  const res = await api('/api/wb/'+wbId, 'PUT', { invoiceNo, invoiceDate, invoiceQty, invoiceRate, invoiceAmt });
+  if (res.ok) { toast('Invoice saved'); clearInvoiceForm(); loadInvoicePage(); }
+}
+
+function clearInvoiceForm() {
+  ['inv-no','inv-date','inv-qty','inv-rate'].forEach(id => document.getElementById(id).value = '');
+  ['inv-sup','inv-po','inv-net','inv-netq','inv-grndate','inv-amt'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inv-veh').value = '';
+  document.getElementById('inv-mismatch').classList.remove('show');
 }
 
 // ═══ ADMIN — PURCHASE ORDERS ═══
