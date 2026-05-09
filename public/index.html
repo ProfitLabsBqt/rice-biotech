@@ -409,7 +409,9 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
         <div class="rrow"><span class="rlabel">Black Rice Deduction</span><span class="rval r" id="r-blded">—</span></div>
         <div class="rrow"><span class="rlabel">Total Deduction %</span><span class="rval r" id="r-totded">—</span></div>
         <div class="rrow"><span class="rlabel">Effective Price / Quintal</span><span class="rval y" id="r-effprice">—</span></div>
-        <div class="rrow"><span class="rlabel">Received Qty (Q)</span><span class="rval" id="r-qty">—</span></div>
+        <div class="rrow"><span class="rlabel">Weighbridge Qty (Q)</span><span class="rval" id="r-wb-qty">—</span></div>
+        <div class="rrow"><span class="rlabel">Invoice Qty (Q)</span><span class="rval" id="r-inv-qty">—</span></div>
+        <div class="rrow"><span class="rlabel">Payment Qty — lower of above</span><span class="rval y" id="r-pay-qty">—</span></div>
         <div class="rrow"><span class="rlabel">Payment Condition</span><span class="rval" id="r-paycond">—</span></div>
         <div class="rrow"><span class="rlabel">Payment Due Date</span><span class="rval" id="r-due">—</span></div>
         <div class="rrow"><span class="rlabel" style="font-size:13px;color:var(--text)">TOTAL PAYABLE AMOUNT</span><span class="rval g" style="font-size:17px" id="r-payable">—</span></div>
@@ -889,7 +891,9 @@ function calcDed() {
   const totDed = stDed + blDed;
   const cdDis = po.paymentCond==='CD' ? 1 : 0;
   const effPrice = po.price*(1-totDed/100)*(1-cdDis/100);
-  const payable = effPrice * wb.netQ;
+  const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
+  const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
+  const payable = effPrice * payQty;
   let payDays = parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
@@ -900,7 +904,9 @@ function calcDed() {
   set('r-blded', blDed>0?blDed+'% (Black rice >3%)':'Nil');
   set('r-totded', totDed+'%');
   set('r-effprice','₹'+effPrice.toFixed(2)+'/Q'+(cdDis?' (CD: -1%)':''));
-  set('r-qty', wb.netQ+' Q');
+  set('r-wb-qty', wb.netQ+' Q');
+  set('r-inv-qty', invQty ? invQty+' Q' : 'Not entered — using weighbridge qty');
+  set('r-pay-qty', payQty+' Q'+(invQty && invQty < wb.netQ ? ' (invoice is lower)' : invQty && invQty > wb.netQ ? ' (weighbridge is lower)' : ''));
   set('r-paycond', po.paymentCond==='CD'?'CD — 1% Cash Discount':po.paymentCond+' Days');
   set('r-due', due.toLocaleDateString('en-IN'));
   set('r-payable','₹'+Math.round(payable).toLocaleString('en-IN'));
@@ -940,7 +946,9 @@ async function genGRN() {
   const totDed = stDed+blDed;
   const cdDis = po.paymentCond==='CD'?1:0;
   const effPrice = po.price*(1-totDed/100)*(1-cdDis/100);
-  const payable = Math.round(effPrice*wb.netQ);
+  const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
+  const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
+  const payable = Math.round(effPrice * payQty);
   let payDays = parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
@@ -950,6 +958,7 @@ async function genGRN() {
     supplier: wb.supplier, agent: wb.agent,
     date: wb.grnDate, invoiceQty: wb.invoiceQty,
     receivedKg: wb.net, receivedQ: wb.netQ,
+    payQty,
     starch, moisture, tfm, stone, black,
     starchDed: stDed, blackDed: blDed, totalDedPct: totDed,
     effPrice: +effPrice.toFixed(2), payable,
