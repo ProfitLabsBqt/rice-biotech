@@ -305,7 +305,7 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
             <select id="f-po-pay">
               <option value="30">30 Days</option><option value="45">45 Days</option>
               <option value="60">60 Days</option>
-              <option value="CD">CD — 1% Discount</option>
+              <option value="CD">CD 7 Days — 1% Discount</option>
               <option value="CD4">CD 4 Days — 1.5% Discount</option>
               <option value="Advance">Advance</option>
             </select>
@@ -764,7 +764,7 @@ async function loadPOList() {
       <td class="mono" style="color:var(--green)">${(po.receivedQtyMT||0).toFixed(1)} MT</td>
       <td class="mono" style="color:${bal<=5?'var(--red)':'var(--accent)'}">${bal.toFixed(1)} MT</td>
       <td class="mono">₹${po.price}/Q</td>
-      <td>${po.paymentCond==='CD'?'CD 1%':po.paymentCond==='CD4'?'CD4 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
+      <td>${po.paymentCond==='CD'?'CD 7d 1%':po.paymentCond==='CD4'?'CD 4d 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
       <td><span class="pill ${pct===100?'r':pct>0?'y':'g'}">${pct===100?'COMPLETE':pct>0?pct+'% DONE':'OPEN'}</span></td>
     </tr>`;
   }).join('');
@@ -896,10 +896,10 @@ function calcDed() {
   const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
   const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
   const payable = effPrice * payQty;
-  const payDays = po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
+  const payDays = po.paymentCond==='CD' ? 7 : po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
-  const condLabel = po.paymentCond==='CD' ? 'CD — 1% Discount' : po.paymentCond==='CD4' ? 'CD 4 Days — 1.5% Discount' : po.paymentCond==='Advance' ? 'Advance' : po.paymentCond+' Days';
+  const condLabel = po.paymentCond==='CD' ? 'CD 7 Days — 1% Discount' : po.paymentCond==='CD4' ? 'CD 4 Days — 1.5% Discount' : po.paymentCond==='Advance' ? 'Advance' : po.paymentCond+' Days';
 
   set('r-base','₹'+po.price+'/Q');
   set('r-starch', starch+'% — '+stNote);
@@ -952,7 +952,7 @@ async function genGRN() {
   const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
   const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
   const payable = Math.round(effPrice * payQty);
-  const payDays = po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
+  const payDays = po.paymentCond==='CD' ? 7 : po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
 
@@ -1237,7 +1237,7 @@ function renderAdminPOGroup(tbodyId, pos, canCancel) {
       <td class="mono" style="color:var(--green)">${(po.receivedQtyMT||0).toFixed(1)} MT</td>
       <td class="mono" style="color:${bal<=5?'var(--red)':'var(--accent)'}">${bal.toFixed(1)} MT</td>
       <td class="mono">₹${po.price}/Q</td>
-      <td>${po.paymentCond==='CD'?'CD 1%':po.paymentCond==='CD4'?'CD4 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
+      <td>${po.paymentCond==='CD'?'CD 7d 1%':po.paymentCond==='CD4'?'CD 4d 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
       <td><span class="pill ${cancelled?'r':pct===100?'r':pct>0?'y':'g'}">${cancelled?'CANCELLED':pct===100?'COMPLETE':pct>0?pct+'% DONE':'OPEN'}</span></td>
       ${actionCell}
     </tr>`;
