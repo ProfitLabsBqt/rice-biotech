@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: rice-biotech
+    env: node
+    region: singapore
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+    autoDeploy: true
