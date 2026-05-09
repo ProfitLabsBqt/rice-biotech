@@ -304,7 +304,9 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20
           <div class="field"><label>PAYMENT CONDITION</label>
             <select id="f-po-pay">
               <option value="30">30 Days</option><option value="45">45 Days</option>
-              <option value="60">60 Days</option><option value="CD">CD — 1% Cash Discount</option>
+              <option value="60">60 Days</option>
+              <option value="CD">CD — 1% Discount</option>
+              <option value="CD4">CD 4 Days — 1.5% Discount</option>
               <option value="Advance">Advance</option>
             </select>
           </div>
@@ -762,7 +764,7 @@ async function loadPOList() {
       <td class="mono" style="color:var(--green)">${(po.receivedQtyMT||0).toFixed(1)} MT</td>
       <td class="mono" style="color:${bal<=5?'var(--red)':'var(--accent)'}">${bal.toFixed(1)} MT</td>
       <td class="mono">₹${po.price}/Q</td>
-      <td>${po.paymentCond} days</td>
+      <td>${po.paymentCond==='CD'?'CD 1%':po.paymentCond==='CD4'?'CD4 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
       <td><span class="pill ${pct===100?'r':pct>0?'y':'g'}">${pct===100?'COMPLETE':pct>0?pct+'% DONE':'OPEN'}</span></td>
     </tr>`;
   }).join('');
@@ -889,25 +891,26 @@ function calcDed() {
   else if (starch < 68) { stDed=1; stNote='Single (below 68%)'; }
   const blDed = black > 3 ? 1 : 0;
   const totDed = stDed + blDed;
-  const cdDis = po.paymentCond==='CD' ? 1 : 0;
+  const cdDis = po.paymentCond==='CD' ? 1 : po.paymentCond==='CD4' ? 1.5 : 0;
   const effPrice = po.price*(1-totDed/100)*(1-cdDis/100);
   const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
   const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
   const payable = effPrice * payQty;
-  let payDays = parseInt(po.paymentCond)||30;
+  const payDays = po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
+  const condLabel = po.paymentCond==='CD' ? 'CD — 1% Discount' : po.paymentCond==='CD4' ? 'CD 4 Days — 1.5% Discount' : po.paymentCond==='Advance' ? 'Advance' : po.paymentCond+' Days';
 
   set('r-base','₹'+po.price+'/Q');
   set('r-starch', starch+'% — '+stNote);
   set('r-stded', stDed+'%');
   set('r-blded', blDed>0?blDed+'% (Black rice >3%)':'Nil');
   set('r-totded', totDed+'%');
-  set('r-effprice','₹'+effPrice.toFixed(2)+'/Q'+(cdDis?' (CD: -1%)':''));
+  set('r-effprice','₹'+effPrice.toFixed(2)+'/Q'+(cdDis?' ('+condLabel+')':''));
   set('r-wb-qty', wb.netQ+' Q');
   set('r-inv-qty', invQty ? invQty+' Q' : 'Not entered — using weighbridge qty');
   set('r-pay-qty', payQty+' Q'+(invQty && invQty < wb.netQ ? ' (invoice is lower)' : invQty && invQty > wb.netQ ? ' (weighbridge is lower)' : ''));
-  set('r-paycond', po.paymentCond==='CD'?'CD — 1% Cash Discount':po.paymentCond+' Days');
+  set('r-paycond', condLabel);
   set('r-due', due.toLocaleDateString('en-IN'));
   set('r-payable','₹'+Math.round(payable).toLocaleString('en-IN'));
   res.style.display='block';
@@ -944,12 +947,12 @@ async function genGRN() {
   let stDed=0; if(starch<67)stDed=2; else if(starch<68)stDed=1;
   const blDed = black>3?1:0;
   const totDed = stDed+blDed;
-  const cdDis = po.paymentCond==='CD'?1:0;
+  const cdDis = po.paymentCond==='CD' ? 1 : po.paymentCond==='CD4' ? 1.5 : 0;
   const effPrice = po.price*(1-totDed/100)*(1-cdDis/100);
   const invQty = wb.invoiceQty > 0 ? wb.invoiceQty : null;
   const payQty = invQty ? Math.min(wb.netQ, invQty) : wb.netQ;
   const payable = Math.round(effPrice * payQty);
-  let payDays = parseInt(po.paymentCond)||30;
+  const payDays = po.paymentCond==='CD4' ? 4 : parseInt(po.paymentCond)||30;
   const due = new Date(wb.grnDate);
   due.setDate(due.getDate()+payDays);
 
@@ -1234,7 +1237,7 @@ function renderAdminPOGroup(tbodyId, pos, canCancel) {
       <td class="mono" style="color:var(--green)">${(po.receivedQtyMT||0).toFixed(1)} MT</td>
       <td class="mono" style="color:${bal<=5?'var(--red)':'var(--accent)'}">${bal.toFixed(1)} MT</td>
       <td class="mono">₹${po.price}/Q</td>
-      <td>${po.paymentCond}</td>
+      <td>${po.paymentCond==='CD'?'CD 1%':po.paymentCond==='CD4'?'CD4 1.5%':po.paymentCond==='Advance'?'Advance':po.paymentCond+' Days'}</td>
       <td><span class="pill ${cancelled?'r':pct===100?'r':pct>0?'y':'g'}">${cancelled?'CANCELLED':pct===100?'COMPLETE':pct>0?pct+'% DONE':'OPEN'}</span></td>
       ${actionCell}
     </tr>`;
